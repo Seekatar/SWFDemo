@@ -69,13 +69,19 @@ namespace CCC.CAS.Workflow2Service.Services
             {
                 using (var swfClient = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey, RegionEndpoint.GetBySystemName(_config.Region)))
                 {
+                    _logger.LogDebug($"{nameof(AwsWorkflowDeciderService)} polling");
                     var decisionTask = await Poll(swfClient).ConfigureAwait(false);
 
                     if (!string.IsNullOrEmpty(decisionTask?.TaskToken))
                     {
+                        _logger.LogDebug($"{nameof(AwsWorkflowDeciderService)} got wf with runid {decisionTask.WorkflowExecution.RunId}");
                         var decisions = await CreateDecisionList(decisionTask).ConfigureAwait(false);
 
                         await CompleteDecisionTasks(swfClient, decisionTask.TaskToken, decisions).ConfigureAwait(false);
+                    } 
+                    else
+                    {
+                        _logger.LogDebug($"{nameof(AwsWorkflowDeciderService)} got null task token");
                     }
                 }
                 Thread.Sleep(100);
@@ -194,6 +200,8 @@ namespace CCC.CAS.Workflow2Service.Services
 
             if (workDemoActivityState == null) return decisions;
 
+            _logger.LogDebug($"Last state is {workDemoActivityState}");
+
             switch (workDemoActivityState.ScenarioNumber)
             {
                 case 1:
@@ -201,15 +209,13 @@ namespace CCC.CAS.Workflow2Service.Services
                     if (workDemoActivityState.WorkCompleted.Contains(4))
                     {
                         decisions.Add(CreateCompleteWorkflowDecision(workDemoActivityState));
-                        return decisions;
                     }
-                    if (!workDemoActivityState.WorkRequested.Contains(1))
+                    else if (!workDemoActivityState.WorkRequested.Contains(1))
                     {
                         workDemoActivityState.WorkRequested.Add(1);
                         decisions.Add(CreateDecisionActivity(workDemoActivityState, 1));
-                        return decisions;
                     }
-                    if (!workDemoActivityState.WorkRequested.Contains(2))
+                    else if (!workDemoActivityState.WorkRequested.Contains(2))
                     {
                         workDemoActivityState.WorkRequested.Add(2);
                         decisions.Add(CreateDecisionActivity(
@@ -219,13 +225,11 @@ namespace CCC.CAS.Workflow2Service.Services
                         decisions.Add(CreateDecisionActivity(
                             workDemoActivityState, 3));
 
-                        return decisions;
                     }
-                    if (workDemoActivityState.WorkRequested.Contains(2))
+                    else if (workDemoActivityState.WorkRequested.Contains(2))
                     {
                         workDemoActivityState.WorkRequested.Add(4);
                         decisions.Add(CreateDecisionActivity(workDemoActivityState, 4));
-                        return decisions;
                     }
                     break;
 
@@ -241,7 +245,8 @@ namespace CCC.CAS.Workflow2Service.Services
                             workDemoActivityState.WorkRequested.Add(1);
                             decisions.Add(CreateDecisionActivity(
                                 workDemoActivityState, 1));
-                            return decisions;
+                            break;
+
                         case 1:
 
                             if (workDemoActivityState.EventType == EventType.TimerFired)
@@ -255,9 +260,14 @@ namespace CCC.CAS.Workflow2Service.Services
                                 decisions.Add(CreateTimerDecision(
                                     workDemoActivityState));
                             }
-                            return decisions;
+                            break;
                     }
                     break;
+            }
+            _logger.LogDebug($"Sending {decisions.Count} decisions:");
+            foreach (var d in decisions)
+            {
+                _logger.LogDebug($"   {d.DecisionType}");
             }
             return decisions;
         }
@@ -277,10 +287,15 @@ namespace CCC.CAS.Workflow2Service.Services
                             Version = "1.0"
                         },
                         ActivityId = $"{DateTime.Now.Ticks}_{activitySuffix}",
-                        Input = JsonSerializer.Serialize(workDemoActivityState)
+                        Input = JsonSerializer.Serialize(workDemoActivityState),
+                        ScheduleToStartTimeout = "30",
+                        ScheduleToCloseTimeout = "30"
                     }
             };
-
+            if (activitySuffix == 1)
+            {
+                decision.ScheduleActivityTaskDecisionAttributes.ActivityType.Version = "1.2";
+            }
             return decision;
         }
 

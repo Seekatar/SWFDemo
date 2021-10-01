@@ -63,9 +63,10 @@ namespace CCC.CAS.Workflow2Service.Repositories
 
                 try
                 {
+                    _logger.LogDebug($"Starting workflow for {workDemoActivityState.ScenarioNumber}");
                     await amazonSimpleWorkflowClient.StartWorkflowExecutionAsync(
                         startWorkflowExecutionRequest).ConfigureAwait(false);
-                } 
+                }
                 catch (Exception e)
                 {
                     _logger.LogError(e, "Starting workflow");

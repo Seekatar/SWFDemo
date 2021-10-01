@@ -33,6 +33,7 @@ namespace CCC.CAS.Workflow2Service.Services
             {
                 using (var swfClient = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey, RegionEndpoint.GetBySystemName(_config.Region)))
                 {
+                    _logger.LogDebug($"{nameof(AwsWorkflowActivityService)} polling");
                     var activityTask = await Poll(swfClient).ConfigureAwait(false);
 
                     if (string.IsNullOrEmpty(activityTask?.TaskToken))

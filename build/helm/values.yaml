@@ -1,0 +1,58 @@
+# default values for the cas-service chart
+# commented out sections show the most common override values
+# DO NOT put secrets here since this goes into the repo, see the
+# README about using shared_appsettings.json
+cas-service:
+
+  # deployFlow for Flow in K8s, use false for local
+  deployFlow: true
+
+  # full name
+  serviceName: cas-workflow2-service
+
+  # Docker Image and tag
+  image:
+    name: ccc-cas-workflow2-service
+    tag: "$env:IMAGE_TAG"
+    repository: "rulesenginecontainerregistry.azurecr.io"
+    pullPolicy: IfNotPresent
+
+  # configMap has values to put into the environment
+  configMap:
+    ActiveMq__Host: "cas-activemq"
+    ActiveMq__Username: "service"
+    ASPNETCORE_URLS: "http://+:8080"
+
+  # don't put secrets here, 'secrets' in deploy.yml
+
+  # volumes has hostpath and cifs mounts
+  # volumes:
+  #   - hostPath: /ais-stage01/Share03/Images/
+  #   - vol: //172.31.2.125/Share01/Images/
+  #     path: /ais-stage01/Share01/Images/
+  #     secret: nas-reliance-cifs-secret
+  #     dmode: "0444"
+  #     fmode: "0444"
+  #     ver: "1.0"
+
+  # healthChecks for liveness and ready
+  # healthChecks:
+  #   port: 8080
+  #   liveness:
+  #     url: /health/live
+  #     initialDelaySeconds: 10
+  #     timeoutSeconds: 15
+  #     periodSeconds: 15
+
+  #   ready:
+  #     url: /health/ready
+  #     initialDelaySeconds: 45
+  #     timeoutSeconds: 120
+  #     periodSeconds: 120
+
+  # sevice configuration
+  # service:
+    # type: ClusterIP
+    # port: 80
+    # targetPort: 8080
+    # nodePort: 32000

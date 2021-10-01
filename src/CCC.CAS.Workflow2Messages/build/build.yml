@@ -1,0 +1,53 @@
+name: "1.0.$(Rev:r)"
+# Azure DevOps pipeline template for building a message nupkg
+# this assumes the message project folder is under ./src for the repository
+
+trigger:
+  branches:
+    include:
+    - main
+    - release/*
+  paths:
+    include:
+    - src/CCC.CAS.Workflow2Messages
+
+variables:
+  - group: CONTAINER_REGISTRY_CREDENTIALS
+  - group: NEXUS_AUTH
+  - name: VERSION
+    value: '$(Build.BuildNumber)'
+  - name: PROJECT_NAME
+    value: CCC.CAS.Workflow2Messages
+
+jobs:
+- job: build
+  pool:
+    vmImage: 'windows-2019'
+  timeoutInMinutes: 20
+  cancelTimeoutInMinutes: 20
+  strategy:
+    maxParallel: 1
+
+  steps:
+  - task: NuGetToolInstaller@1
+    inputs:
+      versionSpec:
+
+  - pwsh: |
+      nuget sources add -name ccc -source $(NUGET_URL) -username $(NUGET_USERNAME) -password $env:NUGET_PASSWORD
+
+      dotnet build -c Release -p:Version=$env:VERSION,AssemblyVersion=$env:VERSION
+      "Built"
+
+      dotnet pack -c Release -o ..\..\packages -p:Version=$env:VERSION,AssemblyVersion=$env:VERSION --no-build
+      "Packed"
+
+      cd ..\..\packages
+      nuget setapikey $env:NUGET_API_KEY -source $(NUGET_URL)
+      nuget push ".\CCC.CAS.Workflow2Messages.${env:VERSION}.nupkg" -source $(NUGET_URL)
+
+    displayName: 'Build Script'
+    workingDirectory: $(Build.SourcesDirectory)/src/CCC.CAS.Workflow2Messages
+    env:
+      NUGET_PASSWORD: $(NUGET_PASSWORD)
+      NUGET_API_KEY: $(NUGET_API_KEY)

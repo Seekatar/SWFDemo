@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageId>CCC.CAS.Workflow2Messages</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Casualty</Authors>
+    <Company>CCC</Company>
+    <Description>
+    This library contains workflow2 messages for microservices
+    </Description>
+    <AssemblyVersion>0.0.1</AssemblyVersion>
+    <VersionPrefix>0.0.2</VersionPrefix>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Debug\net5.0\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Release\net5.0\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CCC.CAS.API.Common" Version="1.1.5" />
+    <PackageReference Include="MassTransit.ActiveMQ" Version="7.0.7" />
+    <PackageReference Include="MassTransit.Analyzers" Version="7.0.7" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+  </ItemGroup>
+</Project>

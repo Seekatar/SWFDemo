@@ -13,25 +13,26 @@ namespace CCC.CAS.Workflow2Service.Consumers
     public class GetEchoConsumer : IConsumer<IGetEcho>
     {
         private readonly ILogger<GetEchoConsumer> _logger;
-        private readonly IEchoRepository _workflow2Repository;
+        private readonly IActivityService _workflow2Repository;
 
-        public GetEchoConsumer(ILogger<GetEchoConsumer> logger, IEchoRepository EchoRepository)
+        public GetEchoConsumer(ILogger<GetEchoConsumer> logger, IActivityService activityService)
         {
             _logger = logger;
-            _workflow2Repository = EchoRepository;
+            _workflow2Repository = activityService;
         }
 
         public async Task Consume(ConsumeContext<IGetEcho> context)
         {
             if (context == null) { throw new ArgumentNullException(nameof(context)); }
 
-            _logger.LogInformation(context.CorrelationId, "GetEchoConsumer: got {name}", context.Message.Name);
+            _logger.LogInformation(context.CorrelationId, "StartWorkflowConsumer: got {name}", context.Message.Name);
 
             // name shouldn't be anything too wacky since we pass it in the url's path
-            var Echo = await _workflow2Repository.GetEchoAsync(context.GetIdentity(), HttpUtility.UrlEncode(context.Message.Name)).ConfigureAwait(false);
+            await _workflow2Repository.StartWorkflow(context.Message.Name == "1" ? 1 : 2).ConfigureAwait(false);
 
-            await context.RespondAsync<IGetEchoResponse>(new GetEchoResponse { Echo = Echo })
+            await context.RespondAsync<IGetEchoResponse>(new GetEchoResponse { })
                 .ConfigureAwait(false);
         }
+
     }
 }

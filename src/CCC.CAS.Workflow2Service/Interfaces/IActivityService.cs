@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 
 namespace CCC.CAS.Workflow2Service.Interfaces
 {
-    public interface IEchoRepository
+    public interface IActivityService
     {
-        Task<EchoResponse?> GetEchoAsync(CallerIdentity identity, string name);
+        Task StartWorkflow(int scenario);
     }
 
 }

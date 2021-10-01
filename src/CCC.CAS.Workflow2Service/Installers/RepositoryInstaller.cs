@@ -3,6 +3,7 @@ using CCC.CAS.API.Common.Installers;
 using CCC.CAS.API.Common.Logging;
 using CCC.CAS.Workflow2Service.Interfaces;
 using CCC.CAS.Workflow2Service.Repositories;
+using CCC.CAS.Workflow2Service.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -24,11 +25,11 @@ namespace CCC.CAS.Workflow2Service.Installers
 
             try
             {
-                services.AddTransient<IWorkflow2Repository, Workflow2Repository>();
+                services.AddHostedService<AwsWorkflowDeciderService>();
+                services.AddHostedService<AwsWorkflowActivityService>();
+                services.AddSingleton<IActivityService,ActivityService>();
 
-                services.AddTransient<IEchoRepository, EchoRepository>();
-
-                _debugLogger.LogDebug("DB services added.");
+                _debugLogger.LogDebug("Services added.");
             }
             catch (Exception ex)
             {

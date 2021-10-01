@@ -39,7 +39,7 @@ namespace TestMessages
                         {
                             case "E":
                                 {
-                                    var gotIt = await sender.GetEcho(new GetEcho { Name = "Fred" }, identity);
+                                    var gotIt = await sender.GetEcho(new GetEcho { Name = "1" }, identity);
                                     if (gotIt != null)
                                     {
                                         WriteLine($"Waited for echo! Got response '{gotIt.Parm.Message}'");

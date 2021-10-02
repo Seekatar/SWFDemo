@@ -18,9 +18,9 @@ namespace CCC.CAS.Workflow2Service.Services
     public class AwsWorkflowActivityService : BackgroundService
     {
         private ILogger<AwsWorkflowActivityService> _logger;
-        private readonly StorageConfiguration _config;
+        private readonly AwsWorkflowConfiguration _config;
 
-        public AwsWorkflowActivityService(IOptions<StorageConfiguration> config, ILogger<AwsWorkflowActivityService> logger)
+        public AwsWorkflowActivityService(IOptions<AwsWorkflowConfiguration> config, ILogger<AwsWorkflowActivityService> logger)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
             _logger = logger;
@@ -85,13 +85,13 @@ namespace CCC.CAS.Workflow2Service.Services
             }
         }
 
-        private static async Task<ActivityTask> Poll(
+        private async Task<ActivityTask> Poll(
                 AmazonSimpleWorkflowClient amazonSimpleWorkflowClient)
         {
             var pollForActivityTaskRequest = new PollForActivityTaskRequest
             {
-                Domain = "test-jmw",
-                TaskList = new TaskList { Name = "defaultTaskList" }
+                Domain = _config.Domain,
+                TaskList = new TaskList { Name = _config.DefaultTaskList }
             };
 
             var pollForActivityTaskResponse = await amazonSimpleWorkflowClient

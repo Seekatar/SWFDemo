@@ -2,7 +2,6 @@
 using Amazon.SimpleWorkflow.Model;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,6 +10,8 @@ namespace CCC.CAS.Workflow2Service.Services
     class HistoryIterator : IAsyncEnumerable<HistoryEvent>
     {
         DecisionTask lastResponse;
+        private readonly string _domain;
+        private readonly string _taskList;
         IAmazonSimpleWorkflow swfClient;
 
         /// <summary>
@@ -18,10 +19,14 @@ namespace CCC.CAS.Workflow2Service.Services
         /// </summary>
         /// <param name="client">SWF client to use for getting next page of history events.</param>
         /// <param name="response">The decision task returned from the PollForDecisionTask call.</param>
-        public HistoryIterator(IAmazonSimpleWorkflow client, DecisionTask response)
+        /// <param name="domain"></param>
+        /// <param name="taskList"></param>
+        public HistoryIterator(IAmazonSimpleWorkflow client, DecisionTask response, string domain, string taskList )
         {
-            this.swfClient = client;
-            this.lastResponse = response;
+            swfClient = client;
+            lastResponse = response;
+            _domain = domain;
+            _taskList = taskList;
         }
 
         /// <summary>
@@ -57,11 +62,11 @@ namespace CCC.CAS.Workflow2Service.Services
         {
             PollForDecisionTaskRequest request = new PollForDecisionTaskRequest()
             {
-                Domain = "test-jmw",
+                Domain = _domain,
                 NextPageToken = lastResponse.NextPageToken,
                 TaskList = new TaskList()
                 {
-                    Name = "defaultTaskList"
+                    Name = _taskList
                 }
             };
 
@@ -75,7 +80,7 @@ namespace CCC.CAS.Workflow2Service.Services
                 pollFailed = false;
                 try
                 {
-                    this.lastResponse = (await swfClient.PollForDecisionTaskAsync(request).ConfigureAwait(false)).DecisionTask;
+                    lastResponse = (await swfClient.PollForDecisionTaskAsync(request).ConfigureAwait(false)).DecisionTask;
                 }
                 catch (Exception ex)
                 {
@@ -85,7 +90,7 @@ namespace CCC.CAS.Workflow2Service.Services
                 }
             }
             while (pollFailed && ++currentTry <= retryCount);
-            return this.lastResponse.Events;
+            return lastResponse.Events;
         }
     }
 }

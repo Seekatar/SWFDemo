@@ -23,10 +23,10 @@ namespace CCC.CAS.Workflow2Service.Repositories
     /// </summary>
     internal class ActivityService : IActivityService
     {
-        private readonly StorageConfiguration _config;
+        private readonly AwsWorkflowConfiguration _config;
         private readonly ILogger<ActivityService> _logger;
 
-        public ActivityService(IOptions<StorageConfiguration> config, ILogger<ActivityService> logger)
+        public ActivityService(IOptions<AwsWorkflowConfiguration> config, ILogger<ActivityService> logger)
         {
             _config = config.Value;
             _logger = logger;
@@ -45,7 +45,7 @@ namespace CCC.CAS.Workflow2Service.Repositories
             {
                 var startWorkflowExecutionRequest = new StartWorkflowExecutionRequest
                 {
-                    Domain = "test-jmw",
+                    Domain = _config.Domain,
                     WorkflowId = Guid.NewGuid().ToString(),
                     WorkflowType = new WorkflowType
                     {

@@ -46,15 +46,62 @@ namespace CCC.CAS.Workflow2Service.Services
         }
     }
 
-    public class AwsWorkflowDeciderService : BackgroundService
+    public class AwsWorkflowConfig
     {
-        private readonly StorageConfiguration _config;
+        private readonly AwsWorkflowConfiguration _config;
         //private readonly IAmazonSimpleWorkflow _client;
-        private readonly ILogger<AwsWorkflowDeciderService> _logger;
+        private readonly ILogger<AwsWorkflowConfig> _logger;
 
-        public AwsWorkflowDeciderService(IOptions<StorageConfiguration> config, ILogger<AwsWorkflowDeciderService> logger)
+        public AwsWorkflowConfig(IOptions<AwsWorkflowConfiguration> config, ILogger<AwsWorkflowConfig> logger)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
+            _config = config.Value;
+            _logger = logger;
+        }
+
+        public async Task Register()
+        {
+            using var client = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey, RegionEndpoint.GetBySystemName(_config.Region));
+
+            string[] activityNames = { "DemoActivity1", "DemoActivity2", "DemoActivity4", "DemoActivity4" };
+            string version = "1.3";
+
+            foreach (var name in activityNames)
+            {
+                RegisterActivityTypeRequest request = new()
+                {
+                    DefaultTaskList = new TaskList() { Name = _config.DefaultTaskList },
+                    DefaultTaskScheduleToCloseTimeout = "600",
+                    DefaultTaskScheduleToStartTimeout = "600",
+                    Domain = _config.Domain,
+                    DefaultTaskStartToCloseTimeout = "600",
+                    Name = name,
+                    Version = version,
+                    DefaultTaskHeartbeatTimeout = "NONE"
+                };
+                try
+                {
+                    await client.RegisterActivityTypeAsync(request).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, $"Error registering {name} {version}");
+                }
+            }
+        }
+    }
+
+    public class AwsWorkflowDeciderService : BackgroundService
+    {
+        private readonly AwsWorkflowConfiguration _config;
+        private readonly ILogger<AwsWorkflowDeciderService> _logger;
+        //private readonly IAmazonSimpleWorkflow _client;
+
+        public AwsWorkflowDeciderService(IOptions<AwsWorkflowConfiguration> config, ILogger<AwsWorkflowDeciderService> logger, AwsWorkflowConfig awsWorkflowConfig)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            awsWorkflowConfig?.Register();
 
             _config = config.Value;
             //_client = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey,RegionEndpoint.GetBySystemName(_config.Region));
@@ -118,7 +165,7 @@ namespace CCC.CAS.Workflow2Service.Services
             using (var swfClient = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey, RegionEndpoint.GetBySystemName(_config.Region)))
             {
                 var historyIterator = new HistoryIterator(
-                    swfClient, decisionTask); // , "test-jmw", "defaultTaskList");
+                    swfClient, decisionTask, _config.Domain, _config.DefaultTaskList);
 
                 await foreach (var historyEvent in historyIterator)
                 {
@@ -284,7 +331,7 @@ namespace CCC.CAS.Workflow2Service.Services
                         ActivityType = new ActivityType
                         {
                             Name = $"DemoActivity{activitySuffix}",
-                            Version = "1.0"
+                            Version = "1.3"
                         },
                         ActivityId = $"{DateTime.Now.Ticks}_{activitySuffix}",
                         Input = JsonSerializer.Serialize(workDemoActivityState),
@@ -292,10 +339,6 @@ namespace CCC.CAS.Workflow2Service.Services
                         ScheduleToCloseTimeout = "30"
                     }
             };
-            if (activitySuffix == 1)
-            {
-                decision.ScheduleActivityTaskDecisionAttributes.ActivityType.Version = "1.2";
-            }
             return decision;
         }
 
@@ -333,12 +376,12 @@ namespace CCC.CAS.Workflow2Service.Services
         }
 
 
-        private static async Task<DecisionTask> Poll(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient)
+        private async Task<DecisionTask> Poll(AmazonSimpleWorkflowClient amazonSimpleWorkflowClient)
         {
             var pollForDecisionTaskRequest = new PollForDecisionTaskRequest
             {
-                Domain = "test-jmw",
-                TaskList = new TaskList { Name = "defaultTaskList" }
+                Domain = _config.Domain,
+                TaskList = new TaskList { Name = _config.DefaultTaskList }
             };
 
             var pollForDecisionTaskResponse = await amazonSimpleWorkflowClient

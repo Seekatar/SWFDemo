@@ -110,8 +110,6 @@ namespace CCC.CAS.Workflow2Service.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await Task.CompletedTask.ConfigureAwait(false);
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 using (var swfClient = new AmazonSimpleWorkflowClient(_config.AccessKey, _config.SecretKey, RegionEndpoint.GetBySystemName(_config.Region)))
